@@ -71,6 +71,10 @@ const SignInForm = ({callbackUrl}) => {
           <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md mt-4 md:mt-8 transition duration-300 ease-in-out">
             Sign In
           </button>
+          <button onClick={() => signIn("github")}
+           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md mt-4 md:mt-8 transition duration-300 ease-in-out">
+            Sign In with Github
+          </button>
         </form>
         <p className="mt-4 md:mt-8 text-start text-sm text-gray-600">
         <Link className="font-semibold text-blue-500 hover:text-blue-600" href="/auth/forgotPassword">

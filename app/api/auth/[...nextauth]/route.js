@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
+import GithubProvider from "next-auth/providers/github";
 import * as bcrypt from "bcrypt";
 import NextAuth from "next-auth/next";
 
@@ -9,8 +9,8 @@ import { use } from "react";
 import { Prisma, User } from "@prisma/client";
 
 export const authOptions = {
-  pages:{
-    signIn : "/auth/signin"
+  pages: {
+    signIn: "/auth/signin",
   },
   session: {
     strategy: "jwt",
@@ -53,24 +53,58 @@ export const authOptions = {
 
         if (!user.emailVerified)
           throw new Error("Please verify your email first!");
-          
+
         const { password, ...userWithoutPass } = user;
         return userWithoutPass;
       },
     }),
+    GithubProvider({
+      clientId: process.env.GITHUB_CLIENT,
+      clientSecret: process.env.GITHUB_SECRET,
+    }),
   ],
 
-  callbacks : {
-    async jwt({token, user}){
-      if(user) {token.user = user;}
+  callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider == "credentials") {
+        return true;
+      }
+      if (account?.provider == "github") {
+        const existingUser = await prisma.user.findUnique({
+          where: {
+            email: user?.email,
+          },
+        });
+        const {id, ...userWithoutId} = user;
+        if (!existingUser) {
+          const result = await prisma.user.create({
+            data: {
+              ...userWithoutId,
+              password: null
+            },
+          });
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.user = user;
+        const sessionUser = await prisma.user.findUnique({
+        where: {
+          email: user.email,
+        },
+      });
+      token.user.id = sessionUser.id.toString();
+      }
       return token;
     },
 
-    async session({token, session}){
+    async session({ token, session }) {
       session.user = token.user;
-      return session
-    }
-  }
+      return session;
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
